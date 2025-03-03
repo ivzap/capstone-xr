@@ -2,9 +2,9 @@
 CXX = g++
 CXXFLAGS = `pkg-config --cflags opencv4`
 LDFLAGS = `pkg-config --libs opencv4`
-SRC = server.cpp
+SRC = client.cpp
 OBJ = $(SRC:.cpp=.o)
-EXEC = Streamer
+EXEC = Client
 
 # Targets
 all: $(EXEC)
