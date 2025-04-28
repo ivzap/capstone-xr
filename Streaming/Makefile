@@ -4,7 +4,7 @@ CXXFLAGS := -std=c++11 -Wall -Wextra
 LDFLAGS := -pthread 
 
 CXXFLAGS += $(shell pkg-config --cflags NDI opencv4)
-LDFLAGS += $(shell pkg-config --libs NDI opencv4)
+LDFLAGS += $(shell pkg-config --libs NDI opencv4) -Wl,-rpath,$(shell pkg-config --variable=libdir NDI)
 
 
 # Target executable
