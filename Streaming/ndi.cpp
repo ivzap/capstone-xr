@@ -4,15 +4,68 @@
 #include <Processing.NDI.Lib.h>
 #include <thread>
 #include <chrono>
+#include <fstream>
+#include <sstream>
+
+void putTextWithWrap(cv::Mat &frame, const std::string &text, int x, int y, double fontScale, int thickness, const cv::Scalar &color, int maxWidth) {
+    std::vector<std::string> words;
+    std::string word;
+    for (char c : text) {
+        if (c == ' ') {
+            words.push_back(word);
+            word.clear();
+        } else {
+            word += c;
+        }
+    }
+    if (!word.empty()) {
+        words.push_back(word);
+    }
+
+    std::string currentLine;
+    int lineHeight = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, fontScale, thickness, nullptr).height + 5;
+
+    int yOffset = y;
+
+    for (const std::string &word : words) {
+        std::string testLine = currentLine + " " + word;
+        int testWidth = cv::getTextSize(testLine, cv::FONT_HERSHEY_SIMPLEX, fontScale, thickness, nullptr).width;
+
+        if (testWidth <= maxWidth) {
+            currentLine = testLine;
+        } else {
+            cv::putText(frame, currentLine, cv::Point(x, yOffset), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, thickness, 8);
+            yOffset += lineHeight;
+            currentLine = word;
+        }
+    }
+
+    if (!currentLine.empty()) {
+        cv::putText(frame, currentLine, cv::Point(x, yOffset), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, thickness, 8);
+    }
+}
+
+std::string readTextFromFile(const std::string &filename) {
+    std::ifstream file(filename);
+    std::stringstream buffer;
+
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file: " << filename << "\n";
+        return "";
+    }
+
+    buffer << file.rdbuf();
+    return buffer.str();
+}
 
 int main() {
-    // Initialize NDI library
+    std::srand(std::time(0));
+
     NDIlib_initialize();
     
-    // Create NDI sender
     NDIlib_send_create_t sendDesc;
     sendDesc.p_ndi_name = "Simple Camera Stream";
-    sendDesc.p_groups = nullptr; // No group
+    sendDesc.p_groups = nullptr;
     sendDesc.clock_video = true;
     sendDesc.clock_audio = false;
 
@@ -22,30 +75,29 @@ int main() {
         return -1;
     }
 
-    // Open camera
-    cv::VideoCapture cap(0); // Open default camera
-    if (!cap.isOpened()) {
-        std::cerr << "Failed to open camera\n";
+    std::string text = readTextFromFile("covid.txt");
+    if (text.empty()) {
         return -1;
     }
 
     int width = 1280;
     int height = 720;
-    cap.set(cv::CAP_PROP_FRAME_WIDTH, width);
-    cap.set(cv::CAP_PROP_FRAME_HEIGHT, height);
-    cap.set(cv::CAP_PROP_FPS, 30);
 
-    // Main loop: capture frames and send via NDI
+    cv::Mat frame = cv::Mat::zeros(height, width, CV_8UC3);
+
+    int maxWidth = width - 200;
+
+    double fontScale = 1;
+    int thickness = 2.3;
+
     while (true) {
-        cv::Mat frame;
-        cap >> frame; // Capture a frame
-        if (frame.empty()) continue;
+        int x = (width - maxWidth) / 2;
+        int y = 100;
+        putTextWithWrap(frame, text, x, y, fontScale, thickness, cv::Scalar(255, 255, 255), maxWidth);
 
-        // Convert BGR to BGRA (NDI requires 32-bit BGRA format)
         cv::Mat frameBGRA;
         cv::cvtColor(frame, frameBGRA, cv::COLOR_BGR2BGRA);
 
-        // Setup NDI video frame structure
         NDIlib_video_frame_v2_t videoFrame;
         videoFrame.xres = frameBGRA.cols;
         videoFrame.yres = frameBGRA.rows;
@@ -59,15 +111,11 @@ int main() {
         videoFrame.line_stride_in_bytes = frameBGRA.cols * 4;
         videoFrame.p_metadata = nullptr;
 
-        // Send video frame
         NDIlib_send_send_video_v2(ndiSender, &videoFrame);
 
-        // Simulate frame rate (~30fps)
         std::this_thread::sleep_for(std::chrono::milliseconds(33));
     }
 
-    // Cleanup
-    cap.release();
     NDIlib_send_destroy(ndiSender);
     NDIlib_destroy();
     return 0;
