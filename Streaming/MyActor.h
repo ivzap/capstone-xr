@@ -24,7 +24,7 @@
 
 
 UCLASS()
-class MYPROJECT1_API AMyActor : public AActor
+class MYVRTEST_API AMyActor : public AActor
 {
     GENERATED_BODY()
     //DECLARE_DELEGATE_OneParam(FglTFRuntimeStaticMeshAsync, UStaticMesh*);
@@ -48,7 +48,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "GLB")
     void LoadGLBFile(const FString& FilePath);
     void LoadGLBMesh(UglTFRuntimeAsset* GLBAsset);
-    
+
 private:
     USceneComponent* RootComponent; // Declare the root component
     FTimerHandle HttpRequestTimer;
