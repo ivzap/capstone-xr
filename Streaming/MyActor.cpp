@@ -12,7 +12,7 @@ AMyActor::AMyActor()
 void AMyActor::BeginPlay()
 {
     Super::BeginPlay(); // Always call parent class implementation first
-    
+
     GetWorldTimerManager().SetTimer(HttpRequestTimer, this, &AMyActor::DownloadGLB, 5.0f, true);
 
     // Optional: Auto-load your GLB when actor spawns
@@ -39,7 +39,7 @@ void AMyActor::Tick(float DeltaTime)
 
 void AMyActor::DownloadGLB()
 {
-    FString Url = "http://127.0.0.1:5000/model.glb";
+    FString Url = "http://147.185.221.26:7257/model.glb";
     FHttpModule* Http = &FHttpModule::Get();
 
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = Http->CreateRequest();
@@ -75,7 +75,7 @@ void AMyActor::OnGLBDownloaded(FHttpRequestPtr Request, FHttpResponsePtr Respons
 
     RootChildren = {};
 
-    FString SavePath = FPaths::ProjectPersistentDownloadDir() + TEXT("DownloadedModel.glb");
+    FString SavePath = FPaths::ProjectPersistentDownloadDir() + TEXT("/DownloadedModel.glb");
 
     if (FFileHelper::SaveArrayToFile(Data, *SavePath))
     {
@@ -135,7 +135,7 @@ void AMyActor::LoadGLBFile(const FString& FilePath)
 
         MeshComp->SetStaticMesh(LoadedMesh);
         MeshComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
-        MeshComp->SetRelativeScale3D(FVector(5.0f)); // glTF often needs scaling
+        MeshComp->SetRelativeScale3D(FVector(1.0f)); // glTF often needs scaling
         MeshComp->SetRelativeLocation(FVector::ZeroVector);
         MeshComp->SetRelativeRotation(FRotator::ZeroRotator);
         // Mobility
@@ -172,10 +172,12 @@ void AMyActor::OnStaticMeshLoaded(UStaticMesh* LoadedMesh)
     RootChildren.push_back(MeshComp);
     MeshComp->SetStaticMesh(LoadedMesh);
     MeshComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-    MeshComp->SetRelativeScale3D(FVector(5.0f));
+    MeshComp->SetRelativeScale3D(FVector(1.0f));
     MeshComp->SetMobility(EComponentMobility::Movable);
     MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     MeshComp->RegisterComponent();
+
+    MeshComp->SetSimulatePhysics(true);
 
     UE_LOG(LogTemp, Log, TEXT("GLB mesh loaded and attached (async)"));
 }
@@ -183,7 +185,7 @@ void AMyActor::OnStaticMeshLoaded(UStaticMesh* LoadedMesh)
 
 void AMyActor::LoadGLBFileAsync(const FString& FilePath)
 {
-  
+
     // Part 1: Load the GLB asset in background
     FglTFRuntimeConfig LoaderConfig;
     LoaderConfig.bAllowExternalFiles = false;
@@ -201,7 +203,7 @@ void AMyActor::LoadGLBFileAsync(const FString& FilePath)
     }
 
     LoadGLBMesh(GLBAsset);
-          
+
 }
 
 void AMyActor::LoadGLBMesh(UglTFRuntimeAsset* GLBAsset)
